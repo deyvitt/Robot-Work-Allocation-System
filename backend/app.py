@@ -1,5 +1,4 @@
 # ~/RobotWorkAllocationSystem/backend/app.py
-
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -7,12 +6,10 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 import sys
 
-# Robust path resolution for Render + local
 CURRENT_FILE = Path(__file__).resolve()
 PROJECT_ROOT = CURRENT_FILE.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# Import your existing logic
 from models import Inventory
 from utils import parse_inventory_input, parse_clients_input, solve_allocation, calculate_max_capacity
 from strategies.level1 import run_level1
@@ -29,7 +26,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve frontend
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
@@ -41,19 +37,16 @@ async def read_root():
     with open(html_path, "r", encoding="utf-8") as f:
         return f.read()
 
-# Manual request parsing - NO PYDANTIC
 @app.post("/api/allocate")
 async def allocate(request: Request):
     try:
         data = await request.json()
-        
         level = data.get("level")
         bravo = data.get("bravo")
         charlie = data.get("charlie")
         delta = data.get("delta")
         hours_input = data.get("hours_input")
         
-        # Manual validation
         if not all(isinstance(x, int) for x in [level, bravo, charlie, delta]):
             raise ValueError("Robot counts and level must be integers")
         if not isinstance(hours_input, str):
@@ -64,54 +57,27 @@ async def allocate(request: Request):
         inv = parse_inventory_input(bravo, charlie, delta)
         clients = parse_clients_input(hours_input)
 
-        # Level 1
         if level == 1:
             l1 = run_level1(inv, clients[0])
-            return {
-                "status": "success",
-                "allocation": {
-                    "bravo": l1.bravo, "charlie": l1.charlie, "delta": l1.delta,
-                    "total_hours": l1.total_hours, "requested": clients[0],
-                    "valid": l1.is_valid, "error": l1.error
-                }
-            }
-
-        # Level 2
+            return {"status": "success", "allocation": {"bravo": l1.bravo, "charlie": l1.charlie, "delta": l1.delta, "total_hours": l1.total_hours, "requested": clients[0], "valid": l1.is_valid, "error": l1.error}}
         elif level == 2:
             l1 = run_level1(inv, clients[0])
             l2 = run_level2(inv, clients[0], l1_alloc=l1)
             diff = l1.total_cost - l2.total_cost if l1.is_valid and l2.is_valid else 0
-            return {
-                "status": "success",
-                "level2": {"bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta, "cost": l2.total_cost, "hours": l2.total_hours},
-                "level1_cost": l1.total_cost if l1.is_valid else 0,
-                "cost_difference": diff,
-                "insight": f"Level 1 strategy resulted in ${diff} additional cost due to mandatory usage of multiple robot categories." if diff > 0 else None
-            }
-
-        # Level 3
+            return {"status": "success", "level2": {"bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta, "cost": l2.total_cost, "hours": l2.total_hours}, "level1_cost": l1.total_cost if l1.is_valid else 0, "cost_difference": diff, "insight": f"Level 1 strategy resulted in ${diff} additional cost due to mandatory usage of multiple robot categories." if diff > 0 else None}
         elif level == 3:
             max_active = calculate_max_capacity(inv)
             deficit = max(0, clients[0] - max_active)
             standby = None
             if deficit > 0:
                 standby = solve_allocation(deficit, {"Bravo": 50, "Charlie": 50, "Delta": 50}, "cost")
-            return {
-                "status": "success",
-                "active_capacity": max_active,
-                "requested": clients[0],
-                "deficit": deficit,
-                "standby": {"bravo": standby.bravo, "charlie": standby.charlie, "delta": standby.delta, "cost": standby.total_cost} if standby and standby.is_valid else None
-            }
-
-        # Level 4
+            return {"status": "success", "active_capacity": max_active, "requested": clients[0], "deficit": deficit, "standby": {"bravo": standby.bravo, "charlie": standby.charlie, "delta": standby.delta, "cost": standby.total_cost} if standby and standby.is_valid else None}
         elif level == 4:
             sorted_clients = sorted(clients, reverse=True)
             remaining = inv.to_dict()
             total_used = {"Bravo": 0, "Charlie": 0, "Delta": 0}
             total_cost = 0
             allocations = []
-
             for idx, hrs in enumerate(sorted_clients, 1):
                 alloc = solve_allocation(hrs, remaining, "cost")
                 if alloc.is_valid:
@@ -132,23 +98,11 @@ async def allocate(request: Request):
                             allocations.append({"client": idx, "hours": hrs, "standby": f"Bravo:{standby.bravo} Charlie:{standby.charlie} Delta:{standby.delta}", "status": "standby_required"})
                         else:
                             allocations.append({"client": idx, "hours": hrs, "status": "impossible"})
-
             total_potential = (total_used["Bravo"]*3) + (total_used["Charlie"]*5) + (total_used["Delta"]*8)
             avg_util = (sum(clients) / total_potential * 100) if total_potential > 0 else 0.0
-
-            return {
-                "status": "success",
-                "allocations": allocations,
-                "summary": {
-                    "total_robots_used": total_used,
-                    "total_cost": total_cost,
-                    "avg_utilisation": round(avg_util, 1)
-                }
-            }
-
+            return {"status": "success", "allocations": allocations, "summary": {"total_robots_used": total_used, "total_cost": total_cost, "avg_utilisation": round(avg_util, 1)}}
         else:
             raise ValueError("Invalid level")
-
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
