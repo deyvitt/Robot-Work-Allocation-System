@@ -60,12 +60,13 @@ The core engine uses a bounded search algorithm that guarantees optimal allocati
 ## Quick Start
 
 ### Command Line Interface (Default)
-
 ```bash
 cd RobotWorkAllocationSystem
 python3 main.py
 ```
+
 ### Interactive Example:
+```text
 🤖 EverBot Solutions - Robot Work Allocation System
 Type 'quit' to exit.
 
@@ -89,6 +90,7 @@ Level 2 Cost: $11
 Cost Difference: $1
 Insight: Level 1 strategy resulted in $1 additional cost due to mandatory usage of multiple robot categories.
 ==================================================
+```
 
 ## Browser Interface
 
@@ -291,10 +293,12 @@ else:
 | **Parse Failure** | Non-numeric or malformed hours string | `Invalid input. Please enter positive integers separated by spaces or commas.` |
 
 ### Logging Strategy
+```text
 ●  User-facing errors: print(..., file=sys.stderr) for immediate visibility
 ●  Debug/audit logs: logger.debug/info/warning to stderr (separate stream)
 ●  Request tracing: UUID prefix [abc12345] for correlating CLI/API requests
 ●  Production safety: No sensitive data in logs; structured JSON-ready format
+```
 
 ## Testing
 ### Run the Test Suite
@@ -313,6 +317,7 @@ pytest tests/ --cov=robot_allocator --cov-report=html
 ```
 
 ### Test Coverage Includes
+```text
 ✔   Exact PDF example validation (Levels 1–4)
 ✔   Negative/zero input rejection with correct error strings
 ✔   Inventory exhaustion & standby fallback routing
@@ -320,7 +325,7 @@ pytest tests/ --cov=robot_allocator --cov-report=html
 ✔   Cost comparison delta accuracy
 ✔   Multi-client priority sorting verification
 ✔   Edge cases: large requests, boundary values, tie-breaking scenarios
-
+```
 
 ### Example Test Assertion
 ```python
