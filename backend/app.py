@@ -4,10 +4,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import sys
-import os
 
-# Ensure project root is in Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from models import Inventory
 from utils import parse_inventory_input, parse_clients_input, solve_allocation, calculate_max_capacity
