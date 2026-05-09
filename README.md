@@ -403,11 +403,13 @@ git push origin feature/your-feature-name
 ```
 
 2. Code Style
+```text
     ○  Use British English spellings: optimised, minimise, utilisation, programme
     ○  Currency symbol: $ (US Dollar) — matches Everest Engineering spec
     ○  Type hints: Always annotate function signatures (-> ReturnType)
     ○  Docstrings: Google-style with Args/Returns/Raises for public functions
     ○  Logging: Use logger.debug/info/warning for background audit; print() for user output
+```
 
 3. Adding a New Strategy Level
 
