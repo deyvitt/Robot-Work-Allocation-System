@@ -1,3 +1,5 @@
+# ~/RobotWorkAllocationSystem/main.py
+
 import sys
 from models import Inventory
 from utils import parse_inventory_input, parse_clients_input

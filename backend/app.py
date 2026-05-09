@@ -1,13 +1,18 @@
-from fastapi import FastAPI, HTTPException
+# ~/RobotWorkAllocationSystem/backend/app.py
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pathlib import Path
 import sys
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Robust path resolution for Render + local
+CURRENT_FILE = Path(__file__).resolve()
+PROJECT_ROOT = CURRENT_FILE.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Import your existing logic
 from models import Inventory
 from utils import parse_inventory_input, parse_clients_input, solve_allocation, calculate_max_capacity
 from strategies.level1 import run_level1
@@ -17,7 +22,6 @@ from strategies.level4 import run_level4
 
 app = FastAPI(title="Robot Work Allocation System")
 
-# 1. CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,31 +29,43 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. Static Files & Frontend
-frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
-app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+# Serve frontend
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    with open(os.path.join(frontend_path, "index.html"), "r", encoding="utf-8") as f:
+    html_path = FRONTEND_DIR / "index.html"
+    if not html_path.exists():
+        return {"error": "frontend/index.html not found"}
+    with open(html_path, "r", encoding="utf-8") as f:
         return f.read()
 
-# 3. Request Schema (Data Validation Only)
-class AllocationRequest(BaseModel):
-    level: int
-    bravo: int
-    charlie: int
-    delta: int
-    hours_input: str  # Accepts "20" or "12, 16, 21"
-
-# 4. API Route (Business Logic)
+# Manual request parsing - NO PYDANTIC
 @app.post("/api/allocate")
-def allocate(req: AllocationRequest):
+async def allocate(request: Request):
     try:
-        inv = parse_inventory_input(req.bravo, req.charlie, req.delta)
-        clients = parse_clients_input(req.hours_input)
+        data = await request.json()
+        
+        level = data.get("level")
+        bravo = data.get("bravo")
+        charlie = data.get("charlie")
+        delta = data.get("delta")
+        hours_input = data.get("hours_input")
+        
+        # Manual validation
+        if not all(isinstance(x, int) for x in [level, bravo, charlie, delta]):
+            raise ValueError("Robot counts and level must be integers")
+        if not isinstance(hours_input, str):
+            raise ValueError("hours_input must be a string")
+        if level not in [1, 2, 3, 4]:
+            raise ValueError("Level must be 1, 2, 3, or 4")
+        
+        inv = parse_inventory_input(bravo, charlie, delta)
+        clients = parse_clients_input(hours_input)
 
-        if req.level == 1:
+        # Level 1
+        if level == 1:
             l1 = run_level1(inv, clients[0])
             return {
                 "status": "success",
@@ -60,7 +76,8 @@ def allocate(req: AllocationRequest):
                 }
             }
 
-        elif req.level == 2:
+        # Level 2
+        elif level == 2:
             l1 = run_level1(inv, clients[0])
             l2 = run_level2(inv, clients[0], l1_alloc=l1)
             diff = l1.total_cost - l2.total_cost if l1.is_valid and l2.is_valid else 0
@@ -72,7 +89,8 @@ def allocate(req: AllocationRequest):
                 "insight": f"Level 1 strategy resulted in ${diff} additional cost due to mandatory usage of multiple robot categories." if diff > 0 else None
             }
 
-        elif req.level == 3:
+        # Level 3
+        elif level == 3:
             max_active = calculate_max_capacity(inv)
             deficit = max(0, clients[0] - max_active)
             standby = None
@@ -86,7 +104,8 @@ def allocate(req: AllocationRequest):
                 "standby": {"bravo": standby.bravo, "charlie": standby.charlie, "delta": standby.delta, "cost": standby.total_cost} if standby and standby.is_valid else None
             }
 
-        elif req.level == 4:
+        # Level 4
+        elif level == 4:
             sorted_clients = sorted(clients, reverse=True)
             remaining = inv.to_dict()
             total_used = {"Bravo": 0, "Charlie": 0, "Delta": 0}
@@ -126,8 +145,11 @@ def allocate(req: AllocationRequest):
                     "avg_utilisation": round(avg_util, 1)
                 }
             }
+
         else:
-            raise HTTPException(status_code=400, detail="Invalid level. Choose 1, 2, 3, or 4.")
+            raise ValueError("Invalid level")
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
