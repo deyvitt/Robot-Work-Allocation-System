@@ -1,136 +1,270 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EverBot Solutions - Robot Allocation</title>
+    <title>EverBot Solutions - Robot Allocation System</title>
     <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background: #f5f7fa; color: #1a1a1a; }
-        .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
-        h1 { color: #2563eb; margin-bottom: 0.5rem; }
-        label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 500; }
-        input, select { width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
-        button { background: #2563eb; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; font-size: 1rem; }
-        button:hover { background: #1d4ed8; }
-        #output { white-space: pre-wrap; background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 6px; font-family: monospace; min-height: 100px; }
-        .error { color: #ef4444; font-weight: bold; }
-        .success { color: #10b981; }
+        :root {
+            --bg: #f4f6f9;
+            --card: #ffffff;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --text: #1f2937;
+            --text-muted: #6b7280;
+            --border: #d1d5db;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --radius: 8px;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 1.5rem;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        header { margin-bottom: 1.5rem; text-align: center; }
+        h1 { color: var(--primary); margin-bottom: 0.5rem; }
+        p { color: var(--text-muted); }
+        .card { background: var(--card); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.95rem; }
+        input, select {
+            width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px;
+            font-size: 1rem; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        button {
+            background: var(--primary); color: #ffffff; border: none; padding: 0.75rem 1.5rem;
+            border-radius: 6px; font-size: 1rem; font-weight: 500; cursor: pointer; width: 100%;
+            transition: background 0.2s;
+        }
+        button:hover { background: var(--primary-hover); }
+        button:disabled { background: var(--text-muted); cursor: not-allowed; }
+        .output-box {
+            background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 6px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9rem; line-height: 1.5; min-height: 120px; white-space: pre-wrap;
+        }
+        .success { border-left: 4px solid var(--success); }
+        .error { color: var(--error); font-weight: bold; }
+        .warning { color: var(--warning); }
+        .loading { opacity: 0.7; pointer-events: none; }
+        @media (max-width: 600px) { .grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>EverBot Solutions</h1>
-        <p>Terminal-compliant allocation system accessible via browser.</p>
-        <form id="allocForm">
-            <label>Strategy Level</label>
-            <select id="level" required>
-                <option value="1">Level 1: Category Distribution</option>
-                <option value="2">Level 2: Cost Optimisation</option>
-                <option value="3">Level 3: Standby Activation</option>
-                <option value="4">Level 4: Multi-Client Allocation</option>
-            </select>
+    <main class="container">
+        <header>
+            <h1>EverBot Solutions</h1>
+            <p>Terminal-compliant allocation system accessible via browser.</p>
+        </header>
 
-            <label>Available Robots (Bravo, Charlie, Delta)</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
-                <input type="number" id="bravo" placeholder="Bravo count" min="0" required>
-                <input type="number" id="charlie" placeholder="Charlie count" min="0" required>
-                <input type="number" id="delta" placeholder="Delta count" min="0" required>
-            </div>
+        <section class="card">
+            <form id="allocForm">
+                <div class="form-group">
+                    <label for="level">Strategy Level</label>
+                    <select id="level" required>
+                        <option value="1">Level 1: Category Distribution</option>
+                        <option value="2">Level 2: Cost Optimisation</option>
+                        <option value="3">Level 3: Standby Activation</option>
+                        <option value="4">Level 4: Multi-Client Allocation</option>
+                    </select>
+                </div>
 
-            <label>Client Work Hours (single or comma/space separated)</label>
-            <input type="text" id="hours_input" placeholder="e.g. 20 or 12, 16, 21" required>
+                <div class="form-group">
+                    <label>Available Robots (Bravo, Charlie, Delta)</label>
+                    <div class="grid-3">
+                        <input type="number" id="bravo" placeholder="Bravo count" min="0" required>
+                        <input type="number" id="charlie" placeholder="Charlie count" min="0" required>
+                        <input type="number" id="delta" placeholder="Delta count" min="0" required>
+                    </div>
+                </div>
 
-            <button type="submit">Calculate Allocation</button>
-        </form>
-    </div>
+                <div class="form-group">
+                    <label for="hours_input">Client Work Hours (single or comma/space separated)</label>
+                    <input type="text" id="hours_input" placeholder="e.g. 20 or 12, 16, 21" required>
+                </div>
 
-    <div class="card">
-        <h3>Allocation Output</h3>
-        <div id="output">Results will appear here...</div>
-    </div>
+                <button type="submit" id="submitBtn">Calculate Allocation</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Allocation Output</h2>
+            <div id="output" class="output-box">Results will appear here after calculation...</div>
+        </section>
+    </main>
 
     <script>
-        document.getElementById('allocForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('allocForm');
             const outputDiv = document.getElementById('output');
-            outputDiv.textContent = 'Calculating...';
-            
-            const payload = {
-                level: parseInt(document.getElementById('level').value),
-                bravo: parseInt(document.getElementById('bravo').value),
-                charlie: parseInt(document.getElementById('charlie').value),
-                delta: parseInt(document.getElementById('delta').value),
-                hours_input: document.getElementById('hours_input').value
-            };
+            const submitBtn = document.getElementById('submitBtn');
 
-            try {
-                const res = await fetch('/api/allocate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Request failed');
-                
-                outputDiv.innerHTML = formatOutput(data);
-            } catch (err) {
-                outputDiv.innerHTML = `<span class="error">Error: ${err.message}</span>`;
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await handleSubmission();
+            });
+
+            async function handleSubmission() {
+                // Reset UI state
+                outputDiv.textContent = '';
+                outputDiv.className = 'output-box loading';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+
+                try {
+                    // 1. Gather & sanitise inputs
+                    const level = parseInt(document.getElementById('level').value, 10);
+                    const bravo = parseInt(document.getElementById('bravo').value, 10);
+                    const charlie = parseInt(document.getElementById('charlie').value, 10);
+                    const delta = parseInt(document.getElementById('delta').value, 10);
+                    const hoursRaw = document.getElementById('hours_input').value.trim();
+
+                    // 2. Client-side validation
+                    if ([level, bravo, charlie, delta].some(isNaN)) {
+                        throw new Error('All robot counts and level must be valid integers.');
+                    }
+                    if (bravo < 0 || charlie < 0 || delta < 0) {
+                        throw new Error('Robot counts cannot be negative.');
+                    }
+                    if (!hoursRaw) {
+                        throw new Error('Client work hours cannot be empty.');
+                    }
+                    if (!/^[\d\s,]+$/.test(hoursRaw)) {
+                        throw new Error('Hours must contain only numbers, commas, or spaces.');
+                    }
+
+                    const payload = { level, bravo, charlie, delta, hours_input: hoursRaw };
+                    console.log('[DEBUG] Sending payload:', JSON.stringify(payload, null, 2));
+
+                    // 3. Make API request with timeout handling
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+                    const response = await fetch('/api/allocate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    // 4. Handle HTTP errors
+                    if (!response.ok) {
+                        let errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+                        try {
+                            const errData = await response.json();
+                            if (errData && errData.detail) errorDetail = errData.detail;
+                        } catch { /* Ignore if response is not JSON */ }
+                        throw new Error(errorDetail);
+                    }
+
+                    // 5. Parse JSON response safely
+                    const data = await response.json();
+                    console.log('[DEBUG] Received response:', JSON.stringify(data, null, 2));
+
+                    if (data.status !== 'success') {
+                        throw new Error(data.error || 'Allocation returned an unexpected status.');
+                    }
+
+                    // 6. Format and display results
+                    outputDiv.innerHTML = formatOutput(data, level);
+                    outputDiv.classList.remove('loading');
+                    outputDiv.classList.add('success');
+
+                } catch (error) {
+                    console.error('[ERROR] Allocation failed:', error);
+                    let userMessage = error.message;
+                    if (error.name === 'AbortError') {
+                        userMessage = 'Request timed out. The server may be restarting or busy.';
+                    } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        userMessage = 'Network error. Please check your internet connection and ensure the backend is running.';
+                    }
+                    outputDiv.innerHTML = `<span class="error">❌ ${escapeHtml(userMessage)}</span>`;
+                    outputDiv.classList.remove('loading');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Calculate Allocation';
+                }
+            }
+
+            // Security helper: Prevent XSS in error/output messages
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // Output formatter matching challenge specification
+            function formatOutput(data, level) {
+                let output = '';
+
+                if (level === 1 && data.allocation) {
+                    const a = data.allocation;
+                    output += `📊 LEVEL 1: Category Distribution Strategy\n`;
+                    output += `Robot Assignment:\n`;
+                    if (a.bravo > 0) output += `  Bravo: ${a.bravo}\n`;
+                    if (a.charlie > 0) output += `  Charlie: ${a.charlie}\n`;
+                    if (a.delta > 0) output += `  Delta: ${a.delta}\n`;
+                    output += `Total Work Hours Provided: ${a.total_hours}\n`;
+                    output += `Client Work Hours Requested: ${a.requested}\n`;
+                } else if (level === 2 && data.level2) {
+                    const l2 = data.level2;
+                    output += `💰 LEVEL 2: Cost Optimised Allocation\n`;
+                    output += `Cost Optimized Allocation:\n`;
+                    if (l2.bravo > 0) output += `  Bravo: ${l2.bravo}\n`;
+                    if (l2.charlie > 0) output += `  Charlie: ${l2.charlie}\n`;
+                    if (l2.delta > 0) output += `  Delta: ${l2.delta}\n`;
+                    output += `Total Hours Provided: ${l2.hours}\n`;
+                    output += `Total Charging Cost: $${l2.cost}\n\n`;
+                    output += `Level 1 vs Level 2 Comparison\n`;
+                    output += `  Level 1 Cost: $${data.level1_cost}\n`;
+                    output += `  Level 2 Cost: $${data.level2.cost}\n`;
+                    output += `  Cost Difference: $${data.cost_difference}\n`;
+                    if (data.insight) output += `  Insight: ${data.insight}\n`;
+                } else if (level === 3) {
+                    output += `🔋 LEVEL 3: Standby Activation Strategy\n`;
+                    output += `Active Robot Capacity: ${data.active_capacity} hours\n`;
+                    output += `Client Work Requested: ${data.requested} hours\n`;
+                    if (data.deficit > 0 && data.standby) {
+                        output += `Additional Standby Robots Required:\n`;
+                        if (data.standby.bravo > 0) output += `  Bravo: ${data.standby.bravo}\n`;
+                        if (data.standby.charlie > 0) output += `  Charlie: ${data.standby.charlie}\n`;
+                        if (data.standby.delta > 0) output += `  Delta: ${data.standby.delta}\n`;
+                        output += `Standby Cost: $${data.standby.cost}\n`;
+                    } else {
+                        output += `Sufficient active capacity. No standby robots required.\n`;
+                    }
+                } else if (level === 4 && data.allocations) {
+                    output += `📈 LEVEL 4: Multi-Client Allocation\n`;
+                    data.allocations.forEach(c => {
+                        const statusIcon = c.status === 'allocated' ? '✅' : c.status === 'standby_required' ? '⚠️' : '❌';
+                        output += `Client ${c.client} (${c.hours}h): ${statusIcon} ${c.status.replace(/_/g, ' ')}\n`;
+                        if (c.assigned) output += `  ${c.assigned}\n`;
+                        if (c.standby) output += `  Standby: ${c.standby}\n`;
+                        if (c.error) output += `  Reason: ${c.error}\n`;
+                    });
+                    if (data.summary) {
+                        output += `\n📊 ALLOCATION SUMMARY\n`;
+                        output += `Total Robots Used: Bravo=${data.summary.total_robots_used.Bravo}, Charlie=${data.summary.total_robots_used.Charlie}, Delta=${data.summary.total_robots_used.Delta}\n`;
+                        output += `Total Charging Cost: $${data.summary.total_cost}\n`;
+                        output += `Avg Robot Utilisation: ${data.summary.avg_utilisation}%\n`;
+                    }
+                } else {
+                    output = '⚠️ Received an unexpected response format from the server. Check console for details.';
+                }
+
+                return output;
             }
         });
-
-        function formatOutput(data) {
-            let html = '';
-            if (data.level === 1 || data.allocation) {
-                const a = data.allocation;
-                html += `<span class="success">Level 1: Category Distribution Strategy</span>\n`;
-                html += `Robot Assignment:\n`;
-                if (a.bravo > 0) html += `Bravo: ${a.bravo}\n`;
-                if (a.charlie > 0) html += `Charlie: ${a.charlie}\n`;
-                if (a.delta > 0) html += `Delta: ${a.delta}\n`;
-                html += `Total Work Hours Provided: ${a.total_hours}\n`;
-                html += `Client Work Hours Requested: ${a.requested}\n`;
-            } else if (data.level === 2) {
-                const l2 = data.level2;
-                html += `<span class="success">Level 2: Cost Optimised Allocation</span>\n`;
-                html += `Cost Optimized Allocation:\n`;
-                if (l2.bravo > 0) html += `Bravo: ${l2.bravo}\n`;
-                if (l2.charlie > 0) html += `Charlie: ${l2.charlie}\n`;
-                if (l2.delta > 0) html += `Delta: ${l2.delta}\n`;
-                html += `Total Hours Provided: ${l2.hours}\n`;
-                html += `Total Charging Cost: $${l2.cost}\n`;
-                html += `\nLevel 1 vs Level 2 Comparison\n`;
-                html += `Level 1 Cost: $${data.level1_cost}\n`;
-                html += `Level 2 Cost: $${data.level2.cost}\n`;
-                html += `Cost Difference: $${data.cost_difference}\n`;
-                if (data.insight) html += `Insight: ${data.insight}\n`;
-            } else if (data.level === 3) {
-                html += `<span class="success">Level 3: Standby Activation Strategy</span>\n`;
-                html += `Active Robot Capacity: ${data.active_capacity} hours\n`;
-                html += `Client Work Requested: ${data.requested} hours\n`;
-                if (data.deficit > 0 && data.standby) {
-                    html += `Additional Standby Robots Required:\n`;
-                    if (data.standby.bravo > 0) html += `Bravo: ${data.standby.bravo} cost $${data.standby.bravo*2}\n`;
-                    if (data.standby.charlie > 0) html += `Charlie: ${data.standby.charlie} cost $${data.standby.charlie*3}\n`;
-                    if (data.standby.delta > 0) html += `Delta: ${data.standby.delta} cost $${data.standby.delta*4}\n`;
-                    html += `\nThe output should show the cost optimised one.\n`;
-                } else {
-                    html += `Sufficient active capacity. No standby robots needed.\n`;
-                }
-            } else if (data.level === 4) {
-                html += `<span class="success">Level 4: Multi-Client Allocation</span>\n`;
-                data.allocations.forEach(c => {
-                    html += `Client ${c.client} (${c.hours}h): ${c.status === 'allocated' ? '✅ Allocated' : c.status === 'standby_required' ? '⚠️ Standby needed' : '❌ Impossible'}\n`;
-                    if (c.assigned) html += `  ${c.assigned}\n`;
-                    if (c.standby) html += `  Standby: ${c.standby}\n`;
-                });
-                html += `\nALLOCATION SUMMARY\n`;
-                html += `Total Robots Used: Bravo=${data.summary.total_robots_used.Bravo}, Charlie=${data.summary.total_robots_used.Charlie}, Delta=${data.summary.total_robots_used.Delta}\n`;
-                html += `Total Charging Cost: $${data.summary.total_cost}\n`;
-                html += `Avg Robot Utilisation: ${data.summary.avg_utilisation}%\n`;
-            }
-            return html;
-        }
     </script>
 </body>
 </html>

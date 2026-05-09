@@ -1,23 +1,45 @@
 # ~/RobotWorkAllocationSystem/backend/app.py
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
+
+import os
+import sys
+import uuid
+import logging
+from pathlib import Path
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-import sys
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, Request
 
+# Configure logging for Render + local development
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(sys.stderr)]
+)
+logger = logging.getLogger(__name__)
+
+# Robust path resolution
 CURRENT_FILE = Path(__file__).resolve()
 PROJECT_ROOT = CURRENT_FILE.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from models import Inventory
-from utils import parse_inventory_input, parse_clients_input, solve_allocation, calculate_max_capacity
+# Import application logic
+from models import Inventory, AllocationResult
+from utils import (
+    parse_inventory_input,
+    parse_clients_input,
+    format_allocation
+)
 from strategies.level1 import run_level1
 from strategies.level2 import run_level2
 from strategies.level3 import run_level3
 from strategies.level4 import run_level4
 
-app = FastAPI(title="Robot Work Allocation System")
+app = FastAPI(
+    title="Robot Work Allocation System",
+    description="EverBot Solutions allocation engine — compliant with Everest Engineering challenge specification",
+    version="1.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,84 +48,151 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve static frontend
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
+    """Serve the main HTML interface."""
     html_path = FRONTEND_DIR / "index.html"
     if not html_path.exists():
-        return {"error": "frontend/index.html not found"}
+        logger.error("frontend/index.html not found at %s", html_path)
+        return {"error": "Frontend not found. Please ensure frontend/index.html exists."}
     with open(html_path, "r", encoding="utf-8") as f:
         return f.read()
 
+@app.get("/health")
+async def health_check():
+    """Lightweight endpoint for uptime monitoring."""
+    return {"status": "healthy", "service": "robot-allocator"}
+
 @app.post("/api/allocate")
 async def allocate(request: Request):
+    """
+    Main allocation endpoint.
+
+    Expects JSON payload:
+    {
+        "level": 1|2|3|4,
+        "bravo": int,
+        "charlie": int,
+        "delta": int,
+        "hours_input": str  # e.g. "20" or "12, 16, 21"
+    }
+
+    Returns JSON allocation result or error.
+    """
+    request_id = str(uuid.uuid4())[:8]
+    logger.info("[%s] Received allocation request", request_id)
+
     try:
         data = await request.json()
-        level = data.get("level")
-        bravo = data.get("bravo")
-        charlie = data.get("charlie")
-        delta = data.get("delta")
-        hours_input = data.get("hours_input")
-        
+
+        # Validate required fields
+        required = ["level", "bravo", "charlie", "delta", "hours_input"]
+        missing = [k for k in required if k not in data]
+        if missing:
+            raise ValueError(f"Missing required fields: {', '.join(missing)}")
+
+        level = data["level"]
+        bravo = data["bravo"]
+        charlie = data["charlie"]
+        delta = data["delta"]
+        hours_input = data["hours_input"]
+
+        # Type validation
         if not all(isinstance(x, int) for x in [level, bravo, charlie, delta]):
             raise ValueError("Robot counts and level must be integers")
         if not isinstance(hours_input, str):
             raise ValueError("hours_input must be a string")
         if level not in [1, 2, 3, 4]:
             raise ValueError("Level must be 1, 2, 3, or 4")
-        
+
+        logger.debug("[%s] Parsed input: level=%d, inventory=(B:%d,C:%d,D:%d), hours='%s'",
+                    request_id, level, bravo, charlie, delta, hours_input)
+
+        # Parse and validate domain inputs
         inv = parse_inventory_input(bravo, charlie, delta)
         clients = parse_clients_input(hours_input)
 
+        # Route to appropriate strategy — all now use refactored functions
         if level == 1:
-            l1 = run_level1(inv, clients[0])
-            return {"status": "success", "allocation": {"bravo": l1.bravo, "charlie": l1.charlie, "delta": l1.delta, "total_hours": l1.total_hours, "requested": clients[0], "valid": l1.is_valid, "error": l1.error}}
+            logger.info("[%s] Running Level 1: Category Distribution", request_id)
+            result = run_level1(inv, clients[0])
+            response = {
+                "status": "success",
+                "allocation": {
+                    "bravo": result.bravo, "charlie": result.charlie, "delta": result.delta,
+                    "total_hours": result.total_hours, "requested": clients[0],
+                    "valid": result.is_valid, "error": result.error
+                }
+            }
+
         elif level == 2:
+            logger.info("[%s] Running Level 2: Cost Optimisation", request_id)
             l1 = run_level1(inv, clients[0])
             l2 = run_level2(inv, clients[0], l1_alloc=l1)
             diff = l1.total_cost - l2.total_cost if l1.is_valid and l2.is_valid else 0
-            return {"status": "success", "level2": {"bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta, "cost": l2.total_cost, "hours": l2.total_hours}, "level1_cost": l1.total_cost if l1.is_valid else 0, "cost_difference": diff, "insight": f"Level 1 strategy resulted in ${diff} additional cost due to mandatory usage of multiple robot categories." if diff > 0 else None}
+            response = {
+                "status": "success",
+                "level2": {"bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta, "cost": l2.total_cost, "hours": l2.total_hours},
+                "level1_cost": l1.total_cost if l1.is_valid else 0,
+                "cost_difference": diff,
+                "insight": f"Level 1 strategy resulted in ${diff} additional cost due to mandatory usage of multiple robot categories." if diff > 0 else None
+            }
+
         elif level == 3:
-            max_active = calculate_max_capacity(inv)
-            deficit = max(0, clients[0] - max_active)
-            standby = None
-            if deficit > 0:
-                standby = solve_allocation(deficit, {"Bravo": 50, "Charlie": 50, "Delta": 50}, "cost")
-            return {"status": "success", "active_capacity": max_active, "requested": clients[0], "deficit": deficit, "standby": {"bravo": standby.bravo, "charlie": standby.charlie, "delta": standby.delta, "cost": standby.total_cost} if standby and standby.is_valid else None}
+            logger.info("[%s] Running Level 3: Standby Activation", request_id)
+            result = run_level3(inv, clients[0])
+            standby_data = None
+            if result["standby"] and result["standby"].is_valid:
+                s = result["standby"]
+                standby_data = {
+                    "bravo": s.bravo, "charlie": s.charlie, "delta": s.delta,
+                    "cost": s.total_cost
+                }
+            response = {
+                "status": "success",
+                "active_capacity": result["max_active"],
+                "requested": clients[0],
+                "deficit": result["deficit"],
+                "sufficient": result["sufficient"],
+                "standby": standby_data
+            }
+
         elif level == 4:
-            sorted_clients = sorted(clients, reverse=True)
-            remaining = inv.to_dict()
-            total_used = {"Bravo": 0, "Charlie": 0, "Delta": 0}
-            total_cost = 0
-            allocations = []
-            for idx, hrs in enumerate(sorted_clients, 1):
-                alloc = solve_allocation(hrs, remaining, "cost")
-                if alloc.is_valid:
-                    remaining["Bravo"] -= alloc.bravo
-                    remaining["Charlie"] -= alloc.charlie
-                    remaining["Delta"] -= alloc.delta
-                    total_used["Bravo"] += alloc.bravo
-                    total_used["Charlie"] += alloc.charlie
-                    total_used["Delta"] += alloc.delta
-                    total_cost += alloc.total_cost
-                    allocations.append({"client": idx, "hours": hrs, "assigned": f"Bravo:{alloc.bravo} Charlie:{alloc.charlie} Delta:{alloc.delta}", "status": "allocated"})
-                else:
-                    remaining_hrs = calculate_max_capacity(Inventory(**remaining))
-                    deficit = hrs - remaining_hrs
-                    if deficit > 0:
-                        standby = solve_allocation(deficit, {"Bravo": 100, "Charlie": 100, "Delta": 100}, "cost")
-                        if standby.is_valid:
-                            allocations.append({"client": idx, "hours": hrs, "standby": f"Bravo:{standby.bravo} Charlie:{standby.charlie} Delta:{standby.delta}", "status": "standby_required"})
-                        else:
-                            allocations.append({"client": idx, "hours": hrs, "status": "impossible"})
-            total_potential = (total_used["Bravo"]*3) + (total_used["Charlie"]*5) + (total_used["Delta"]*8)
-            avg_util = (sum(clients) / total_potential * 100) if total_potential > 0 else 0.0
-            return {"status": "success", "allocations": allocations, "summary": {"total_robots_used": total_used, "total_cost": total_cost, "avg_utilisation": round(avg_util, 1)}}
+            logger.info("[%s] Running Level 4: Multi-Client Allocation for %d clients", request_id, len(clients))
+            result = run_level4(inv, clients)
+            # Format allocations for JSON: convert AllocationResult objects to strings
+            formatted_allocs = []
+            for c in result["allocations"]:
+                entry = {"client": c["client"], "hours": c["hours"], "status": c["status"]}
+                if c["status"] == "allocated" and c["assigned"]:
+                    a = c["assigned"]
+                    entry["assigned"] = f"Bravo:{a.bravo} Charlie:{a.charlie} Delta:{a.delta}"
+                elif c["status"] == "standby_required" and c["standby"]:
+                    s = c["standby"]
+                    entry["standby"] = f"Bravo:{s.bravo} Charlie:{s.charlie} Delta:{s.delta}"
+                elif "error" in c:
+                    entry["error"] = c["error"]
+                formatted_allocs.append(entry)
+                
+            response = {
+                "status": "success",
+                "allocations": formatted_allocs,
+                "summary": result["summary"]
+            }
+
         else:
-            raise ValueError("Invalid level")
+            raise ValueError(f"Unsupported level: {level}")
+
+        logger.info("[%s] Allocation completed successfully", request_id)
+        return response
+
     except ValueError as e:
+        logger.warning("[%s] Validation error: %s", request_id, str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("[%s] Unexpected server error", request_id)
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
