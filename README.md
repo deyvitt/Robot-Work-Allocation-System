@@ -212,6 +212,7 @@ else:
 ```
 
 ## Architecture
+```text
 RobotWorkAllocationSystem/
 ├── backend/
 │   └── app.py              # FastAPI REST wrapper with structured logging, CORS, and request tracing
@@ -232,9 +233,14 @@ RobotWorkAllocationSystem/
 ├── requirements.txt        # Production dependencies (fastapi, uvicorn)
 ├── Procfile                # Render deployment: uvicorn startup command
 ├── runtime.txt             # Python version pin: 3.11.0
-└── .gitignore              # Excludes __pycache__, venv/, *.pyc, logs
+└── .gitignore              # Excludes __pycache__/, venv/, *.pyc, logs
+```
 
 ## Data Flow Diagram
+
+### 🔄 Data Flow Diagram
+```markdown
+```text
 User Input (CLI or Web)
         │
         ▼
@@ -251,6 +257,7 @@ User Input (CLI or Web)
         │
         ▼
 User Output (exact PDF-compliant format)
+```
 
 ## Core Algorithm
 The solver uses a bounded brute-force search optimised for three variables. Loop limits are mathematically capped at (requested_hours // capacity_per_robot) + 2, keeping iterations below 1 000 even for large requests.
