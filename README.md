@@ -115,10 +115,12 @@ https://robot-work-allocation-system.onrender.com
 Note: Free-tier instances sleep after 15 minutes of inactivity. First request may take 20–40 seconds to wake.
 
 ## Installation
-###Prerequisites
+```text
+Prerequisites
 ●  Python 3.11 or later
 ●  pip (Python package installer)
 ●  Git (for cloning the repository)
+```
 
 ### Steps
 ```bash
@@ -451,6 +453,7 @@ mypy .
 
 
 ### Contributing
+```text
 Contributions are welcome! Please follow these steps:
     1. Fork the repository
     2. Create a feature branch: git checkout -b feat/your-idea
@@ -458,6 +461,7 @@ Contributions are welcome! Please follow these steps:
     4. Run the test suite: pytest tests/ -v
     5. Lint your code: mypy . && flake8 . (optional but recommended)
     6. Submit a Pull Request with a clear description of changes
+```
 
 ### Code Review Checklist
     •  British English spellings used consistently
