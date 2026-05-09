@@ -48,7 +48,7 @@ uvicorn backend.app:app --reload
 
 # Open frontend/index.html in any browser
 ```
-## 🛠️ How to Run
+## How to Run
 Install dependencies: 
 ```bash
 pip install fastapi uvicorn
@@ -60,7 +60,7 @@ uvicorn backend.app:app --reload
 Open frontend/index.html in any browser
 Select a level, enter robot counts and hours, click Calculate
 
-## 🏗️A Architecture
+## Architecture
 ```
 RobotWorkAllocationSystem/
 ├── backend/
@@ -82,7 +82,9 @@ RobotWorkAllocationSystem/
 ├── runtime.txt             # Pins the Python version so the platform uses a consistent, tested environment.
 └── .gitignore              # ignore the large files from being committed to git
 ```
-##⚙️C Core Algorithm
+
+## Core Algorithm
+
 The solver uses a bounded brute-force search optimised for three variables. Loop limits are mathematically capped at (requested_hours // capacity) + 2, keeping iterations below 1 000 even for large requests. This guarantees:
 Deterministic optimal results
 O(1) space complexity
