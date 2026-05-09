@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Render Deploy](https://img.shields.io/badge/deployed-on_render-0099ff.svg)](https://render.com)
 
-##[!IMPORTANT]
+[!IMPORTANT]
 **Core Requirement:** Terminal-based CLI (`python3 main.py`) fully compliant with Everest Engineering's specification.
 **Bonus Feature:** Optional web interface (`uvicorn  backend.app:app`) deployed to Render for browser access & live demo.
 
