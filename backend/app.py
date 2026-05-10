@@ -25,11 +25,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import application logic
 from models import Inventory, AllocationResult
-from utils import (
-    parse_inventory_input,
-    parse_clients_input,
-    format_allocation
-)
+from utils import parse_inventory_input, parse_clients_input
 from strategies.level1 import run_level1
 from strategies.level2 import run_level2
 from strategies.level3 import run_level3
@@ -69,20 +65,7 @@ async def health_check():
 
 @app.post("/api/allocate")
 async def allocate(request: Request):
-    """
-    Main allocation endpoint.
-
-    Expects JSON payload:
-    {
-        "level": 1|2|3|4,
-        "bravo": int,
-        "charlie": int,
-        "delta": int,
-        "hours_input": str  # e.g. "20" or "12, 16, 21"
-    }
-
-    Returns JSON allocation result or error.
-    """
+    """Main allocation endpoint."""
     request_id = str(uuid.uuid4())[:8]
     logger.info("[%s] Received allocation request", request_id)
 
@@ -112,20 +95,25 @@ async def allocate(request: Request):
         logger.debug("[%s] Parsed input: level=%d, inventory=(B:%d,C:%d,D:%d), hours='%s'",
                     request_id, level, bravo, charlie, delta, hours_input)
 
-        # Parse and validate domain inputs
+        # Parse inputs
         inv = parse_inventory_input(bravo, charlie, delta)
         clients = parse_clients_input(hours_input)
 
-        # Route to appropriate strategy — all now use refactored functions
+        # Route to strategy
         if level == 1:
             logger.info("[%s] Running Level 1: Category Distribution", request_id)
             result = run_level1(inv, clients[0])
             response = {
                 "status": "success",
                 "allocation": {
-                    "bravo": result.bravo, "charlie": result.charlie, "delta": result.delta,
-                    "total_hours": result.total_hours, "requested": clients[0],
-                    "valid": result.is_valid, "error": result.error
+                    "bravo": result.bravo,
+                    "charlie": result.charlie,
+                    "delta": result.delta,
+                    "total_hours": result.total_hours,
+                    "total_cost": result.total_cost,
+                    "requested": clients[0],
+                    "valid": result.is_valid,
+                    "error": result.error
                 }
             }
 
@@ -137,8 +125,12 @@ async def allocate(request: Request):
             response = {
                 "status": "success",
                 "level2": {
-                    "bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta,
-                    "cost": l2.total_cost, "hours": l2.total_hours, "valid": l2.is_valid
+                    "bravo": l2.bravo,
+                    "charlie": l2.charlie,
+                    "delta": l2.delta,
+                    "cost": l2.total_cost,
+                    "hours": l2.total_hours,
+                    "valid": l2.is_valid
                 },
                 "level1_cost": l1.total_cost if l1.is_valid else 0,
                 "cost_difference": diff,
@@ -149,11 +141,14 @@ async def allocate(request: Request):
             logger.info("[%s] Running Level 3: Standby Activation", request_id)
             result = run_level3(inv, clients[0])
             standby_data = None
-            if result["standby"] and result["standby"].is_valid:
+            if result.get("standby") and result["standby"].is_valid:
                 s = result["standby"]
                 standby_data = {
-                    "bravo": s.bravo, "charlie": s.charlie, "delta": s.delta,
-                    "cost": s.total_cost, "valid": s.is_valid
+                    "bravo": s.bravo,
+                    "charlie": s.charlie,
+                    "delta": s.delta,
+                    "cost": s.total_cost,
+                    "valid": s.is_valid
                 }
             response = {
                 "status": "success",
@@ -177,8 +172,17 @@ async def allocate(request: Request):
                 elif c["status"] == "standby_required" and c.get("standby"):
                     s = c["standby"]
                     entry["standby"] = f"Bravo:{s.bravo} Charlie:{s.charlie} Delta:{s.delta}"
-            response = {"status": "success", "allocations": formatted_allocs, "summary": result["summary"]}
-
+                    entry["valid"] = s.is_valid
+                elif "error" in c:
+                    entry["error"] = c["error"]
+                    entry["valid"] = False
+                else:
+                    entry["valid"] = True
+                formatted_allocs.append(entry)
+            response = {
+                "status": "success",
+                "allocations": formatted_allocs,
+                "summary": result["summary"]
             }
 
         else:
