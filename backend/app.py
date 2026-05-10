@@ -136,7 +136,10 @@ async def allocate(request: Request):
             diff = l1.total_cost - l2.total_cost if l1.is_valid and l2.is_valid else 0
             response = {
                 "status": "success",
-                "level2": {"bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta, "cost": l2.total_cost, "hours": l2.total_hours, "valid": l2.is_valid},
+                "level2": {
+                    "bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta,
+                    "cost": l2.total_cost, "hours": l2.total_hours, "valid": l2.is_valid
+                },
                 "level1_cost": l1.total_cost if l1.is_valid else 0,
                 "cost_difference": diff,
                 "insight": f"Level 1 strategy resulted in ${diff} additional cost due to mandatory usage of multiple robot categories." if diff > 0 else None
@@ -164,29 +167,18 @@ async def allocate(request: Request):
         elif level == 4:
             logger.info("[%s] Running Level 4: Multi-Client Allocation for %d clients", request_id, len(clients))
             result = run_level4(inv, clients)
-            # Format allocations for JSON: convert AllocationResult objects to strings
             formatted_allocs = []
             for c in result["allocations"]:
                 entry = {"client": c["client"], "hours": c["hours"], "status": c["status"]}
-                if c["status"] == "allocated" and c["assigned"]:
+                if c["status"] == "allocated" and c.get("assigned"):
                     a = c["assigned"]
                     entry["assigned"] = f"Bravo:{a.bravo} Charlie:{a.charlie} Delta:{a.delta}"
                     entry["valid"] = a.is_valid
-                elif c["status"] == "standby_required" and c["standby"]:
+                elif c["status"] == "standby_required" and c.get("standby"):
                     s = c["standby"]
                     entry["standby"] = f"Bravo:{s.bravo} Charlie:{s.charlie} Delta:{s.delta}"
-                    entry["valid"] = s.is_valid
-                elif "error" in c:
-                    entry["error"] = c["error"]
-                    entry["valid"] = False
-                else:
-                    entry["valid"] = True
-                formatted_allocs.append(entry)
-                
-            response = {
-                "status": "success",
-                "allocations": formatted_allocs,
-                "summary": result["summary"]
+            response = {"status": "success", "allocations": formatted_allocs, "summary": result["summary"]}
+
             }
 
         else:
