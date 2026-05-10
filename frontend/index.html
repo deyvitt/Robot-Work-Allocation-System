@@ -324,7 +324,7 @@
                     const a = data.allocation;
                     
                     // Check if allocation failed
-                    if (!a.is_valid) {
+                    if (a.valid === false) {
                         return `❌ ${a.error || 'Allocation failed.'}\n`;
                     }
                     
@@ -340,7 +340,7 @@
                     const l2 = data.level2;
                     
                     // Check if allocation failed
-                    if (!l2.is_valid) {
+                    if (l2.valid === false) {
                         return `❌ ${l2.error || 'Allocation failed.'}\n`;
                     }
                     
@@ -391,6 +391,13 @@
                         output += `Total Robots Used: Bravo=${data.summary.total_robots_used.Bravo}, Charlie=${data.summary.total_robots_used.Charlie}, Delta=${data.summary.total_robots_used.Delta}\n`;
                         output += `Total Charging Cost: $${data.summary.total_cost}\n`;
                         output += `Avg Robot Utilisation: ${data.summary.avg_utilisation}%\n`;
+
+                        // BONUS: Efficiency Metrics Display
+                        if (data.summary.efficiency_metrics) {
+                            output += `\n📈 EFFICIENCY METRICS\n`;
+                            output += `Bravo Utilisation: ${data.summary.efficiency_metrics.Bravo}%\n`;
+                            output += `Charlie Utilisation: ${data.summary.efficiency_metrics.Charlie}%\n`;
+                            output += `Delta Utilisation: ${data.summary.efficiency_metrics.Delta}%\n`;
                     }
                 } else {
                     output = '⚠️ Received an unexpected response format from the server. Check console for details.';

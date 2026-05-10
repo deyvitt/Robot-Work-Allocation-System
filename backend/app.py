@@ -136,7 +136,7 @@ async def allocate(request: Request):
             diff = l1.total_cost - l2.total_cost if l1.is_valid and l2.is_valid else 0
             response = {
                 "status": "success",
-                "level2": {"bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta, "cost": l2.total_cost, "hours": l2.total_hours},
+                "level2": {"bravo": l2.bravo, "charlie": l2.charlie, "delta": l2.delta, "cost": l2.total_cost, "hours": l2.total_hours, "valid": l2.is_valid},
                 "level1_cost": l1.total_cost if l1.is_valid else 0,
                 "cost_difference": diff,
                 "insight": f"Level 1 strategy resulted in ${diff} additional cost due to mandatory usage of multiple robot categories." if diff > 0 else None
@@ -150,7 +150,7 @@ async def allocate(request: Request):
                 s = result["standby"]
                 standby_data = {
                     "bravo": s.bravo, "charlie": s.charlie, "delta": s.delta,
-                    "cost": s.total_cost
+                    "cost": s.total_cost, "valid": s.is_valid
                 }
             response = {
                 "status": "success",
@@ -171,11 +171,16 @@ async def allocate(request: Request):
                 if c["status"] == "allocated" and c["assigned"]:
                     a = c["assigned"]
                     entry["assigned"] = f"Bravo:{a.bravo} Charlie:{a.charlie} Delta:{a.delta}"
+                    entry["valid"] = a.is_valid
                 elif c["status"] == "standby_required" and c["standby"]:
                     s = c["standby"]
                     entry["standby"] = f"Bravo:{s.bravo} Charlie:{s.charlie} Delta:{s.delta}"
+                    entry["valid"] = s.is_valid
                 elif "error" in c:
                     entry["error"] = c["error"]
+                    entry["valid"] = False
+                else:
+                    entry["valid"] = True
                 formatted_allocs.append(entry)
                 
             response = {

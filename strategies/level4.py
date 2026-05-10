@@ -140,6 +140,28 @@ def run_level4(inventory: Inventory, client_requests: List[int]) -> Dict[str, An
                 "total_requested_hours": total_requested_hours,
                 "avg_utilisation": round(avg_utilisation, 1)
             }
+    
+            # === ✅ ADD THIS BLOCK: Efficiency Metrics Calculation ===
+            inv_dict = inv.to_dict()  # {"Bravo": int, "Charlie": int, "Delta": int}
+            used_counts = summary["total_robots_used"]
+    
+            def calc_utilisation(robot_type: str) -> float:
+                total_available = inv_dict.get(robot_type, 0)
+                total_used = used_counts.get(robot_type, 0)
+                # Utilisation = (robots used / robots available) * 100
+                return round((total_used / total_available) * 100, 1) if total_available > 0 else 0.0
+    
+            summary["efficiency_metrics"] = {
+                "Bravo": calc_utilisation("Bravo"),
+                "Charlie": calc_utilisation("Charlie"),
+                "Delta": calc_utilisation("Delta")
+            }
+            # ============================================
+    
+            return {
+                "allocations": allocations,
+                "summary": summary  # ← Now includes efficiency_metrics
+            raise RuntimeError(f"Level 4 strategy failed: {str(e)}") from e
         }
         
     except ValueError:
