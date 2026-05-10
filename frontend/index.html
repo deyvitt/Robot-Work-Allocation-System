@@ -6,57 +6,121 @@
     <title>EverBot Solutions - Robot Allocation System</title>
     <style>
         :root {
-            --bg: #f4f6f9;
-            --card: #ffffff;
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --text: #1f2937;
-            --text-muted: #6b7280;
-            --border: #d1d5db;
-            --success: #10b981;
-            --error: #ef4444;
+            /* Everest Engineering PDF-inspired color scheme */
+            --amber: #f59e0b;
+            --amber-hover: #d97706;
+            --amber-light: #fef3c7;
+            --dark-grey: #1f2937;
+            --dark-grey-light: #374151;
+            --light-beige: #fffbeb;
+            --white: #ffffff;
+            --border: #d97706;
+            --success: #059669;
+            --error: #dc2626;
             --warning: #f59e0b;
             --radius: 8px;
-            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow: 0 2px 8px rgba(31, 41, 55, 0.12);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            background: var(--light-beige);
+            color: var(--dark-grey);
             line-height: 1.6;
             padding: 1.5rem;
         }
         .container { max-width: 800px; margin: 0 auto; }
-        header { margin-bottom: 1.5rem; text-align: center; }
-        h1 { color: var(--primary); margin-bottom: 0.5rem; }
-        p { color: var(--text-muted); }
-        .card { background: var(--card); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.95rem; }
-        input, select {
-            width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px;
-            font-size: 1rem; transition: border-color 0.2s, box-shadow 0.2s;
+        header { margin-bottom: 1.5rem; text-align: center; padding: 1rem; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border-left: 4px solid var(--amber); }
+        h1 { color: var(--dark-grey); margin-bottom: 0.5rem; font-weight: 700; }
+        h1::before { content: "🤖 "; }
+        p { color: var(--dark-grey-light); }
+        .card { 
+            background: var(--white); 
+            padding: 1.5rem; 
+            border-radius: var(--radius); 
+            box-shadow: var(--shadow); 
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--amber-light);
         }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+        .form-group { margin-bottom: 1rem; }
+        label { 
+            display: block; 
+            margin-bottom: 0.4rem; 
+            font-weight: 600; 
+            font-size: 0.95rem;
+            color: var(--dark-grey);
+        }
+        input, select {
+            width: 100%; 
+            padding: 0.6rem; 
+            border: 2px solid var(--amber-light); 
+            border-radius: 6px;
+            font-size: 1rem; 
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--white);
+            color: var(--dark-grey);
+        }
+        input:focus, select:focus { 
+            outline: none; 
+            border-color: var(--amber); 
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); 
+        }
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
         button {
-            background: var(--primary); color: #ffffff; border: none; padding: 0.75rem 1.5rem;
-            border-radius: 6px; font-size: 1rem; font-weight: 500; cursor: pointer; width: 100%;
-            transition: background 0.2s;
+            background: var(--amber); 
+            color: var(--dark-grey); 
+            border: none; 
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px; 
+            font-size: 1rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            width: 100%;
+            transition: background 0.2s, transform 0.1s;
+            border: 2px solid var(--amber-hover);
         }
-        button:hover { background: var(--primary-hover); }
-        button:disabled { background: var(--text-muted); cursor: not-allowed; }
+        button:hover { 
+            background: var(--amber-hover);
+            transform: translateY(-1px);
+        }
+        button:active { transform: translateY(0); }
+        button:disabled { 
+            background: var(--dark-grey-light); 
+            color: var(--light-beige);
+            border-color: var(--dark-grey);
+            cursor: not-allowed; 
+            transform: none;
+        }
         .output-box {
-            background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 6px;
+            background: var(--dark-grey); 
+            color: var(--amber-light); 
+            padding: 1rem; 
+            border-radius: 6px;
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-            font-size: 0.9rem; line-height: 1.5; min-height: 120px; white-space: pre-wrap;
+            font-size: 0.9rem; 
+            line-height: 1.5; 
+            min-height: 120px; 
+            white-space: pre-wrap;
+            border-left: 4px solid var(--amber);
         }
-        .success { border-left: 4px solid var(--success); }
-        .error { color: var(--error); font-weight: bold; }
-        .warning { color: var(--warning); }
+        .success { border-left-color: var(--success); }
+        .error { color: var(--amber-light); background: rgba(220, 38, 38, 0.2); padding: 0.5rem; border-radius: 4px; }
+        .warning { color: var(--amber); font-weight: 600; }
         .loading { opacity: 0.7; pointer-events: none; }
-        @media (max-width: 600px) { .grid-3 { grid-template-columns: 1fr; } }
+        
+        /* Subtle section dividers */
+        section.card h2 {
+            color: var(--dark-grey);
+            border-bottom: 2px solid var(--amber-light);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        @media (max-width: 600px) { 
+            .grid-3 { grid-template-columns: 1fr; }
+            body { padding: 1rem; }
+        }
     </style>
 </head>
 <body>
