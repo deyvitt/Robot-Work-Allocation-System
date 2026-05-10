@@ -218,8 +218,8 @@
                 }
             });
 
-            // Set correct hint on initial page load
-            levelSelect.dispatchEvent(new Event('change'));
+            // Set correct hint on initial page load (more robust event dispatch)
+            levelSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -319,9 +319,15 @@
             // Output formatter matching challenge specification
             function formatOutput(data, level) {
                 let output = '';
-
+           
                 if (level === 1 && data.allocation) {
                     const a = data.allocation;
+                    
+                    // Check if allocation failed
+                    if (!a.is_valid) {
+                        return `❌ ${a.error || 'Allocation failed.'}\n`;
+                    }
+                    
                     output += `📊 LEVEL 1: Category Distribution Strategy\n`;
                     output += `Robot Assignment:\n`;
                     if (a.bravo > 0) output += `  Bravo: ${a.bravo}\n`;
@@ -329,8 +335,15 @@
                     if (a.delta > 0) output += `  Delta: ${a.delta}\n`;
                     output += `Total Work Hours Provided: ${a.total_hours}\n`;
                     output += `Client Work Hours Requested: ${a.requested}\n`;
+                    
                 } else if (level === 2 && data.level2) {
                     const l2 = data.level2;
+                    
+                    // Check if allocation failed
+                    if (!l2.is_valid) {
+                        return `❌ ${l2.error || 'Allocation failed.'}\n`;
+                    }
+                    
                     output += `💰 LEVEL 2: Cost Optimised Allocation\n`;
                     output += `Cost Optimized Allocation:\n`;
                     if (l2.bravo > 0) output += `  Bravo: ${l2.bravo}\n`;
@@ -343,11 +356,18 @@
                     output += `  Level 2 Cost: $${data.level2.cost}\n`;
                     output += `  Cost Difference: $${data.cost_difference}\n`;
                     if (data.insight) output += `  Insight: ${data.insight}\n`;
+        
                 } else if (level === 3) {
                     output += `🔋 LEVEL 3: Standby Activation Strategy\n`;
                     output += `Active Robot Capacity: ${data.active_capacity} hours\n`;
                     output += `Client Work Requested: ${data.requested} hours\n`;
+                    
                     if (data.deficit > 0 && data.standby) {
+                        // Check if standby allocation failed
+                        if (!data.standby.is_valid) {
+                            output += `❌ ${data.standby.error || 'Standby allocation failed.'}\n`;
+                            return output;
+                        }
                         output += `Additional Standby Robots Required:\n`;
                         if (data.standby.bravo > 0) output += `  Bravo: ${data.standby.bravo}\n`;
                         if (data.standby.charlie > 0) output += `  Charlie: ${data.standby.charlie}\n`;
@@ -356,6 +376,7 @@
                     } else {
                         output += `Sufficient active capacity. No standby robots required.\n`;
                     }
+        
                 } else if (level === 4 && data.allocations) {
                     output += `📈 LEVEL 4: Multi-Client Allocation\n`;
                     data.allocations.forEach(c => {
