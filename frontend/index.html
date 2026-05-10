@@ -30,84 +30,111 @@
             padding: 1.5rem;
         }
         .container { max-width: 800px; margin: 0 auto; }
-        header { margin-bottom: 1.5rem; text-align: center; padding: 1rem; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border-left: 4px solid var(--amber); }
-        h1 { color: var(--dark-grey); margin-bottom: 0.5rem; font-weight: 700; }
+        header {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            padding: 1rem;
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--amber);
+        }
+        h1 {
+            color: var(--dark-grey);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
         h1::before { content: "🤖 "; }
         p { color: var(--dark-grey-light); }
-        .card { 
-            background: var(--white); 
-            padding: 1.5rem; 
-            border-radius: var(--radius); 
-            box-shadow: var(--shadow); 
+        .card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             margin-bottom: 1.5rem;
             border: 1px solid var(--amber-light);
         }
         .form-group { margin-bottom: 1rem; }
-        label { 
-            display: block; 
-            margin-bottom: 0.4rem; 
-            font-weight: 600; 
+        label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
             font-size: 0.95rem;
             color: var(--dark-grey);
         }
         input, select {
-            width: 100%; 
-            padding: 0.6rem; 
-            border: 2px solid var(--amber-light); 
+            width: 100%;
+            padding: 0.6rem;
+            border: 2px solid var(--amber-light);
             border-radius: 6px;
-            font-size: 1rem; 
+            font-size: 1rem;
             transition: border-color 0.2s, box-shadow 0.2s;
             background: var(--white);
             color: var(--dark-grey);
         }
-        input:focus, select:focus { 
-            outline: none; 
-            border-color: var(--amber); 
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); 
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--amber);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
         }
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
         button {
-            background: var(--amber); 
-            color: var(--dark-grey); 
-            border: none; 
+            background: var(--amber);
+            color: var(--dark-grey);
+            border: none;
             padding: 0.75rem 1.5rem;
-            border-radius: 6px; 
-            font-size: 1rem; 
-            font-weight: 600; 
-            cursor: pointer; 
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
             width: 100%;
             transition: background 0.2s, transform 0.1s;
             border: 2px solid var(--amber-hover);
         }
-        button:hover { 
+        button:hover {
             background: var(--amber-hover);
             transform: translateY(-1px);
         }
         button:active { transform: translateY(0); }
-        button:disabled { 
-            background: var(--dark-grey-light); 
+        button:disabled {
+            background: var(--dark-grey-light);
             color: var(--light-beige);
             border-color: var(--dark-grey);
-            cursor: not-allowed; 
+            cursor: not-allowed;
             transform: none;
         }
         .output-box {
-            background: var(--dark-grey); 
-            color: var(--amber-light); 
-            padding: 1rem; 
+            background: var(--dark-grey);
+            color: var(--amber-light);
+            padding: 1rem;
             border-radius: 6px;
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-            font-size: 0.9rem; 
-            line-height: 1.5; 
-            min-height: 120px; 
+            font-size: 0.9rem;
+            line-height: 1.5;
+            min-height: 120px;
             white-space: pre-wrap;
             border-left: 4px solid var(--amber);
         }
         .success { border-left-color: var(--success); }
-        .error { color: var(--amber-light); background: rgba(220, 38, 38, 0.2); padding: 0.5rem; border-radius: 4px; }
-        .warning { color: var(--amber); font-weight: 600; }
-        .loading { opacity: 0.7; pointer-events: none; }
-        
+        .error {
+            color: var(--amber-light);
+            background: rgba(220, 38, 38, 0.2);
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .warning {
+            color: var(--amber);
+            font-weight: 600;
+        }
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
         /* Subtle section dividers */
         section.card h2 {
             color: var(--dark-grey);
@@ -116,8 +143,8 @@
             margin-bottom: 1rem;
             font-size: 1.2rem;
         }
-        
-        @media (max-width: 600px) { 
+
+        @media (max-width: 600px) {
             .grid-3 { grid-template-columns: 1fr; }
             body { padding: 1rem; }
         }
@@ -152,8 +179,11 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="hours_input">Client Work Hours (single or comma/space separated)</label>
-                    <input type="text" id="hours_input" placeholder="e.g. 20 or 12, 16, 21" required>
+                    <label for="hours_input">Client Work Hours</label>
+                    <input type="text" id="hours_input" placeholder="e.g. 20" required>
+                    <small id="hours-hint" style="color: var(--dark-grey-light); font-size: 0.85rem; margin-top: 0.3rem; display: block;">
+                        Single value for Levels 1–3
+                    </small>
                 </div>
 
                 <button type="submit" id="submitBtn">Calculate Allocation</button>
@@ -171,6 +201,25 @@
             const form = document.getElementById('allocForm');
             const outputDiv = document.getElementById('output');
             const submitBtn = document.getElementById('submitBtn');
+
+            const levelSelect = document.getElementById('level');
+            const hoursInput = document.getElementById('hours_input');
+            const hoursHint = document.getElementById('hours-hint');
+
+            // Dynamic placeholder & hint based on selected strategy
+            levelSelect.addEventListener('change', () => {
+                const level = levelSelect.value;
+                if (level === '4') {
+                    hoursInput.placeholder = 'e.g. 12, 16, 21';
+                    hoursHint.textContent = 'Comma or space separated for multiple clients';
+                } else {
+                    hoursInput.placeholder = 'e.g. 20';
+                    hoursHint.textContent = 'Single value for Levels 1–3';
+                }
+            });
+
+            // Set correct hint on initial page load
+            levelSelect.dispatchEvent(new Event('change'));
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
