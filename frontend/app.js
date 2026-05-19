@@ -7,17 +7,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const hoursInput = document.getElementById('hours_input');
     const hoursHint = document.getElementById('hours-hint');
 
-    // Dynamic hint based on level
+    // Dynamic hint + auto-recalc on level change
+    let autoRecalcTimeout = null;  // Debounce timer
+    
     levelSelect.addEventListener('change', () => {
+        // Update placeholder/hint
         if (levelSelect.value === '4') {
-            hoursInput.placeholder = 'e.g. 12, 16, 21';
-            hoursHint.textContent = 'Comma or space separated for multiple clients';
+            hoursInput.placeholder = 'e.g. 12, 16, 21 or 12;16;21';
+            hoursHint.textContent = 'Comma, space, or semicolon separated for multiple clients';
         } else {
             hoursInput.placeholder = 'e.g. 20';
             hoursHint.textContent = 'Single value for Levels 1–3';
         }
+    
+        // Clear stale output
+        outputDiv.textContent = 'Results will appear here after calculation...';
+        outputDiv.className = 'output-box';
+    
+        // Auto-recalc if form is filled AND not already loading
+        const bravoVal = document.getElementById('bravo').value;
+        const charlieVal = document.getElementById('charlie').value;
+        const deltaVal = document.getElementById('delta').value;
+        const hoursVal = hoursInput.value.trim();
+    
+        if (bravoVal && charlieVal && deltaVal && hoursVal && !submitBtn.disabled) {
+            // Debounce: wait 300ms to avoid rapid-fire calls during quick level switches
+            if (autoRecalcTimeout) clearTimeout(autoRecalcTimeout);
+            autoRecalcTimeout = setTimeout(() => {
+                handleSubmission();
+            }, 300);
+        }
     });
-    levelSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -40,8 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if ([level, bravo, charlie, delta].some(isNaN)) throw new Error('All robot counts and level must be valid integers.');
             if (bravo < 0 || charlie < 0 || delta < 0) throw new Error('Robot counts cannot be negative.');
             if (!hoursRaw) throw new Error('Client work hours cannot be empty.');
-            if (!/^[\d\s,]+$/.test(hoursRaw)) throw new Error('Hours must contain only numbers, commas, or spaces.');
-
+            if (!/^[\d\s,;]+$/.test(hoursRaw)) { throw new Error('Hours must contain only numbers, commas, spaces, or semicolons.');}
             const payload = { level, bravo, charlie, delta, hours_input: hoursRaw };
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000);

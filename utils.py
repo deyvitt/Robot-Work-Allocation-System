@@ -72,7 +72,8 @@ def parse_clients_input(raw: str) -> List[int]:
         [20, 15]
     """
     try:
-        clients = [int(x.strip()) for x in raw.replace(",", " ").split() if x.strip()]
+        # Normalize commas AND semicolons to spaces, then split on whitespace
+        clients = [int(x.strip()) for x in raw.replace(",", " ").replace(";", " ").split() if x.strip()]
         if not clients:
             raise ValueError("Empty input")
         if any(h <= 0 for h in clients):
@@ -83,7 +84,7 @@ def parse_clients_input(raw: str) -> List[int]:
         # Preserve context while returning spec-compliant message
         logger.warning("Client input parsing failed: %s", original_exc)
         raise ValueError(
-            "Invalid input. Please enter positive integers separated by spaces or commas."
+            "Invalid input. Please enter positive integers separated by spaces, commas or semicolons."
         ) from original_exc
 
 
