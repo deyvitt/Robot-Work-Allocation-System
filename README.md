@@ -367,7 +367,7 @@ Click Create Web Service → Wait 2–4 minutes for build
 
 Test your live URL:
 ```
-https://everbot-robot-allocator.onrender.com
+https://robot-work-allocation-system.onrender.com/
 ```
 
 ### Environment Configuration
