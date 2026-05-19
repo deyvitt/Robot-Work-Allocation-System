@@ -34,7 +34,15 @@ def run_level4(inventory: Inventory, client_requests: List[int]) -> Dict[str, An
                 total_cost += alloc.total_cost
                 allocations.append({"client": idx, "hours": req, "status": "allocated", "assigned": alloc})
             else:
-                remaining_cap = calculate_max_capacity(Inventory(**remaining))
+                # Explicitly map uppercase keys to lowercase Inventory fields
+                remaining_cap = calculate_max_capacity(
+                    Inventory(
+                        bravo=remaining["Bravo"],
+                        charlie=remaining["Charlie"],
+                        delta=remaining["Delta"]
+                    )
+                )
+
                 deficit = req - remaining_cap
                 if deficit > 0:
                     standby = solve_allocation(deficit, {"Bravo": 100, "Charlie": 100, "Delta": 100}, objective="cost")
